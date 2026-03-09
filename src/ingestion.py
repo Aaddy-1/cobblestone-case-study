@@ -1,99 +1,55 @@
-import requests
 import pandas as pd
-import logging
-import time
+import os
 
-logger = logging.getLogger(__name__)
+def load_exact_column(filepath, exact_col_name, new_col_name):
+    """Reads a file and extracts exactly one renamed column."""
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Missing file: {filepath}")
 
-class SmardDataIngestor:
-    BASE_URL = "https://www.smard.de/app/chart_data"
+    df = pd.read_csv(filepath, sep=';', thousands=',')
+    df['timestamp'] = pd.to_datetime(df['Start date'], format='%b %d, %Y %I:%M %p')
+    df.set_index('timestamp', inplace=True)
+    df = df[~df.index.duplicated(keep='first')]
     
-    FILTERS = {
-        "day_ahead_price": 4169,
-        "wind_onshore_forecast": 4067,
-        "wind_offshore_forecast": 4068,
-        "solar_forecast": 4066,
-        "load_forecast": 4127
-    }
-
-    def fetch_data(self, filter_id, region="DE", resolution="hour"):
-        index_url = f"{self.BASE_URL}/{filter_id}/{region}/index_{resolution}.json"
-        
-        try:
-            response = requests.get(index_url)
-            if response.status_code != 200:
-                return pd.DataFrame()
-            
-            indices = response.json().get('timestamps', [])
-            if not indices:
-                return pd.DataFrame()
-
-            # To get enough data for training, we take the last 3 chunks of data
-            # Each chunk is usually a week or a month of data
-            all_chunks = []
-            for ts in indices[-3:]: 
-                data_url = f"{self.BASE_URL}/{filter_id}/{region}/{filter_id}_{region}_{resolution}_{ts}.json"
-                data_res = requests.get(data_url)
-                if data_res.status_code == 200:
-                    chunk_data = data_res.json().get('series', [])
-                    all_chunks.extend(chunk_data)
-                time.sleep(0.1) # Be kind to the API
-
-            if not all_chunks:
-                return pd.DataFrame()
-
-            df = pd.DataFrame(all_chunks, columns=['timestamp', 'value'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            return df
-
-        except Exception as e:
-            logger.error(f"Request failed for {filter_id}: {e}")
-            return pd.DataFrame()
-
-    def run_qa_checks(self, df, name):
-        """QA Logic with safety for empty DataFrames"""
-        if df.empty or 'value' not in df.columns:
-            logger.error(f"QA Failed: No data for {name}")
-            return pd.DataFrame(), {"status": "Critical Failure", "count": 0}
-
-        checks = {
-            "missing_values": df['value'].isnull().sum(),
-            "duplicate_timestamps": df['timestamp'].duplicated().sum(),
-            "count": len(df)
-        }
-        
-        # Clean the data
-        df = df.drop_duplicates(subset=['timestamp']).sort_values('timestamp')
-        df['value'] = df['value'].interpolate(method='linear')
-        
-        return df, checks
+    return df[[exact_col_name]].rename(columns={exact_col_name: new_col_name})
 
 def main_ingestion():
-    ingestor = SmardDataIngestor()
-    data_frames = {}
+    # 1. Consumption
+    df_con = load_exact_column(
+        "data/consumption.csv",
+        "grid load [MWh] Calculated resolutions",
+        "load"
+    )
 
-    for key, filter_id in ingestor.FILTERS.items():
-        logger.info(f"Fetching {key}...")
-        raw_df = ingestor.fetch_data(filter_id)
-        clean_df, qa_results = ingestor.run_qa_checks(raw_df, key)
-        
-        if not clean_df.empty:
-            data_frames[key] = clean_df.set_index('timestamp')
+    # 2. Prices
+    df_price = load_exact_column(
+        "data/prices.csv",
+        "Germany/Luxembourg [€/MWh] Calculated resolutions",
+        "day_ahead_price"
+    )
 
-    if not data_frames:
-        raise ValueError("No data was collected. Check your internet connection or SMARD status.")
-
-    # Combine all data into one DataFrame
-    master_df = pd.concat(data_frames.values(), axis=1)
-    master_df.columns = data_frames.keys()
+    # 3. Generation (Extracts three specific columns)
+    df_gen_raw = pd.read_csv("data/generation.csv", sep=';', thousands=',')
+    df_gen_raw['timestamp'] = pd.to_datetime(df_gen_raw['Start date'], format='%b %d, %Y %I:%M %p')
+    df_gen_raw.set_index('timestamp', inplace=True)
+    df_gen_raw = df_gen_raw[~df_gen_raw.index.duplicated(keep='first')]
     
-    # Fill any remaining NaNs across the whole table
+    df_gen = df_gen_raw[[
+        'Wind onshore [MWh] Calculated resolutions',
+        'Wind offshore [MWh] Calculated resolutions',
+        'Photovoltaics [MWh] Calculated resolutions'
+    ]].rename(columns={
+        'Wind onshore [MWh] Calculated resolutions': 'wind_onshore',
+        'Wind offshore [MWh] Calculated resolutions': 'wind_offshore',
+        'Photovoltaics [MWh] Calculated resolutions': 'solar'
+    })
+
+    # Merge them all based on the datetime index
+    master_df = pd.concat([df_gen, df_con, df_price], axis=1)
+
+    # Calculate renewables and handle missing values
+    master_df['renewables'] = master_df['wind_onshore'].fillna(0) + master_df['wind_offshore'].fillna(0) + master_df['solar'].fillna(0)
     master_df = master_df.ffill().bfill()
-    
-    logger.info("Ingestion Complete.")
-    return master_df
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    df = main_ingestion()
-    print(df.tail())
+    print(f"Ingestion complete. Dataset shape: {master_df.shape}")
+    return master_df
