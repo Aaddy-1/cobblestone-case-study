@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import os
 from src.ingestion import main_ingestion
 from src.features import build_feature_set
 from src.train import train_and_predict
@@ -19,21 +20,31 @@ def main():
 
     logger.info("--- Step 3: Forecasting & Validation ---")
     results, metrics = train_and_predict(df_with_features)
-    # NEW: Log the cross-validation performance
+    
+    # Log the cross-validation performance
     logger.info(f"Baseline CV MAE: {metrics['baseline_mae']:.2f} EUR/MWh")
     logger.info(f"Improved CV MAE: {metrics['improved_mae']:.2f} EUR/MWh")
     logger.info(f"Improvement: {metrics['improvement_pct']:.1f}%")
-    
-    # NEW: Generate the visual artifact
+
+    # Generate Visual Artifact
     save_forecast_plot(results)
     logger.info("Forecast visualization saved to outputs/forecast_comparison.png")
+
+    # --- NEW: Generate submission.csv ---
+    submission_df = results[['improved']].copy()
+    submission_df.reset_index(inplace=True)
+    submission_df.columns = ['id', 'y_pred'] # Renaming to match case study requirements
+    
+    os.makedirs('outputs', exist_ok=True)
+    submission_df.to_csv('outputs/submission.csv', index=False)
+    logger.info("Out-of-sample predictions saved to outputs/submission.csv")
 
     logger.info("--- Step 4: Prompt Curve Translation ---")
     market_prompt_price = 65.0 
     predicted_fair_value = results['improved'].mean()
     signal = "LONG DA / SHORT CURVE" if predicted_fair_value > market_prompt_price else "SHORT DA / LONG CURVE"
     
-    # NEW: Log the pricing logic so the user can see how the signal was derived
+    # Log the pricing logic so the user can see how the signal was derived
     logger.info(f"Current Market Prompt Price: {market_prompt_price:.2f} EUR/MWh")
     logger.info(f"Model Predicted Fair Value:  {predicted_fair_value:.2f} EUR/MWh")
     logger.info(f"Generated Signal: {signal}")
