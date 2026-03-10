@@ -1,0 +1,68 @@
+========== NEW LLM RUN ==========
+PROMPT:
+
+    You are a Quant Trading Assistant for a European Power Desk. 
+    Review the following daily model results and provide a short, punchy 4-sentence summary:
+    1. Overall model health (Baseline vs. Improved MAE).
+    2. The suggested trading direction (Fair Value vs. Curve).
+    3. Explicitly state the invalidation criteria for this trade.
+    4. Any data quality concerns.
+
+    Context:
+    - Baseline MAE: 38.27
+    - Improved MAE: 22.02
+    - Improvement: 42.5%
+    - Predicted Fair Value (Avg): 109.52 EUR/MWh
+    - Trading Signal: LONG DA / SHORT CURVE
+    - Invalidation Guidance: Invalidate this view if intraday renewable generation (wind/solar) deviates by more than 15% from day-ahead forecasts, or if unexpected major plant outages occur.
+    
+OUTPUT:
+The improved model demonstrates excellent health, cutting MAE by 42.5% from 38.27 to a robust 22.02. The suggested trade is LONG DA / SHORT CURVE, indicating fair value at 109.52 EUR/MWh. Invalidate this view if intraday renewable generation deviates by more than 15% from forecasts or unexpected major plant outages occur. No immediate data quality concerns were highlighted in this run.
+=================================
+
+========== NEW LLM RUN ==========
+PROMPT:
+
+    You are a Quant Trading Assistant for a European Power Desk. 
+    Review the following daily model results and provide a short, punchy 4-sentence summary:
+    1. Overall model health (Baseline vs. Improved MAE).
+    2. The suggested trading direction (Fair Value vs. Curve).
+    3. Explicitly state the invalidation criteria for this trade.
+    4. Any data quality concerns.
+
+    Context:
+    - Baseline MAE: 38.27
+    - Improved MAE: 22.02
+    - Improvement: 42.5%
+    - Predicted Fair Value (Avg): 109.52 EUR/MWh
+    - Trading Signal: LONG DA / SHORT CURVE
+    - Invalidation Guidance: Invalidate this view if intraday renewable generation (wind/solar) deviates by more than 15% from day-ahead forecasts, or if unexpected major plant outages occur.
+    - QA Summary: All QA checks passed cleanly.
+    
+OUTPUT:
+Here is a concise summary of the daily model results:
+
+Model health is strong, with the improved version's MAE of 22.02 EUR/MWh showing a significant 42.5% improvement over the baseline. The model signals a LONG DA / SHORT CURVE trade, valuing power at 109.52 EUR/MWh. Invalidate this view if intraday renewable generation deviates by over 15% from forecasts, or due to unexpected major plant outages. All data quality checks passed cleanly, indicating no immediate concerns.
+=================================
+
+========== NEW LLM RUN ==========
+PROMPT:
+
+    You are a Quant Trading Assistant for a European Power Desk. 
+    Review the following daily model results and provide a short, punchy 3-sentence summary:
+    1. Overall model health (Baseline vs. Improved MAE).
+    2. The suggested trading direction (Fair Value vs. Curve).
+    3. Any data quality concerns.
+
+    Context:
+    - Baseline CV MAE: 27.50
+    - Improved CV MAE: 16.66
+    - Improvement: 39.4%
+    - Predicted Fair Value (Avg): 109.52 EUR/MWh
+    - Trading Signal: LONG DA / SHORT CURVE
+    - QA Summary: All QA checks passed cleanly.
+    
+OUTPUT:
+Model health is excellent, with the improved version showing a significant 39.4% reduction in MAE from baseline. The model recommends a "Long Day-Ahead / Short Curve" trade, positioning for DA prices to converge towards a Fair Value of 109.52 EUR/MWh. Crucially, all underlying data quality checks passed cleanly, ensuring robust signal integrity.
+=================================
+
