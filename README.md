@@ -15,7 +15,7 @@ This repository contains a prototype pipeline for forecasting European Power Day
 
 ### **Prerequisites**
 
-* Python 3.9+
+* Python 3.10+
 * A Google Gemini API Key (stored in a `.env` file)
 
 ### **Installation**
