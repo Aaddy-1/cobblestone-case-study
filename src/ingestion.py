@@ -64,19 +64,26 @@ def main_ingestion():
 
     # --- QUALITY ASSURANCE (QA) CHECKS ---
     logger.info("Running QA Checks...")
-    qa_alerts = [] # NEW: List to store warnings
+    qa_alerts = [] 
     
-    # QA Check 1: Quantify Missing Data before imputation
+    # QA Check 1: Comprehensive Missing Data Analysis
     missing_counts = master_df.isna().sum()
-    logger.info(f"Missing values per column before imputation:\n{missing_counts[missing_counts > 0]}")
+    total_missing = missing_counts.sum()
     
-    total_rows = len(master_df)
-    for col in master_df.columns:
-        missing_pct = master_df[col].isna().sum() / total_rows
-        if missing_pct > 0.05:
-            msg = f"High missing data ratio in {col}: {missing_pct:.1%}"
-            logger.warning(msg)
-            qa_alerts.append(msg)
+    if total_missing > 0:
+        # ffill() only leaves NaNs at the very beginning where there is no prior data to pull forward
+        dropped_rows = master_df.ffill().isna().any(axis=1).sum()
+        
+        alert_msg = f"Missing data: {total_missing} total NaNs. {dropped_rows} initial rows dropped, rest forward-filled."
+        logger.warning(alert_msg)
+        qa_alerts.append(alert_msg) # The LLM will now see this, even if it's just 1 missing value
+        
+        # Still log severe missing data as a separate, critical warning
+        total_rows = len(master_df)
+        for col in master_df.columns:
+            missing_pct = master_df[col].isna().sum() / total_rows
+            if missing_pct > 0.05:
+                qa_alerts.append(f"CRITICAL: {col} is missing {missing_pct:.1%} of its data.")
 
     # QA Check 2: Physical bounds (Load should be positive)
     if (master_df['load'] <= 0).any():
@@ -88,16 +95,18 @@ def main_ingestion():
         logger.warning("QA Alert: Extreme Day-Ahead prices detected (<-500 or >4000 EUR).")
         qa_alerts.append("Extreme Day-Ahead prices detected.")
 
-    # --- IMPUTATION ---
-    logger.info("Imputing missing values using forward/backward fill.")
-    master_df = master_df.ffill().bfill()
+    # --- CONDITIONAL IMPUTATION ---
+    if total_missing > 0:
+        logger.info("Imputing missing values using forward fill and dropping unfillable initial rows.")
+        master_df = master_df.ffill().dropna()
+    else:
+        logger.info("No missing values detected. Skipping imputation step.")
 
     # Final verification
     assert master_df.isna().sum().sum() == 0, "QA Failed: NaNs remain after imputation!"
 
     logger.info(f"Ingestion complete. Final Dataset shape: {master_df.shape}")
     
-    # NEW: Create a summary string to pass to the LLM
     qa_summary = "All QA checks passed cleanly." if not qa_alerts else "WARNINGS: " + "; ".join(qa_alerts)
     
-    return master_df, qa_summary # NEW: Returning a tuple now
+    return master_df, qa_summary

@@ -18,12 +18,20 @@ def main():
 
     logger.info("--- Step 3: Forecasting & Validation ---")
     results, metrics = train_and_predict(df_with_features)
+    # NEW: Log the cross-validation performance
+    logger.info(f"Baseline CV MAE: {metrics['baseline_mae']:.2f} EUR/MWh")
+    logger.info(f"Improved CV MAE: {metrics['improved_mae']:.2f} EUR/MWh")
+    logger.info(f"Improvement: {metrics['improvement_pct']:.1f}%")
 
-    # ... (Step 1, 2, 3 remain the same) ...
     logger.info("--- Step 4: Prompt Curve Translation ---")
     market_prompt_price = 65.0 
     predicted_fair_value = results['improved'].mean()
     signal = "LONG DA / SHORT CURVE" if predicted_fair_value > market_prompt_price else "SHORT DA / LONG CURVE"
+    
+    # NEW: Log the pricing logic so the user can see how the signal was derived
+    logger.info(f"Current Market Prompt Price: {market_prompt_price:.2f} EUR/MWh")
+    logger.info(f"Model Predicted Fair Value:  {predicted_fair_value:.2f} EUR/MWh")
+    logger.info(f"Generated Signal: {signal}")
 
     logger.info("--- Step 5: AI/LLM Integration ---")
     report_context = {
