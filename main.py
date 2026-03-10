@@ -4,6 +4,7 @@ from src.ingestion import main_ingestion
 from src.features import build_feature_set
 from src.train import train_and_predict
 from src.llm_report import generate_summary
+from src.visualization import save_forecast_plot
 
 def main():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -22,6 +23,10 @@ def main():
     logger.info(f"Baseline CV MAE: {metrics['baseline_mae']:.2f} EUR/MWh")
     logger.info(f"Improved CV MAE: {metrics['improved_mae']:.2f} EUR/MWh")
     logger.info(f"Improvement: {metrics['improvement_pct']:.1f}%")
+    
+    # NEW: Generate the visual artifact
+    save_forecast_plot(results)
+    logger.info("Forecast visualization saved to outputs/forecast_comparison.png")
 
     logger.info("--- Step 4: Prompt Curve Translation ---")
     market_prompt_price = 65.0 

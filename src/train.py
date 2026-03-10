@@ -74,9 +74,13 @@ def train_and_predict(df):
     # Generate the prediction for Tomorrow
     future_preds = model.predict(future_df)
     
+    # Ensure baseline is included for the visualization
     results = pd.DataFrame({
+        'baseline': future_df['price_lag_24'].values, # Tomorrow = Today
         'improved': future_preds
     }, index=future_df.index)
+
+    
     
     # Use the robust CV MAE averages for reporting
     baseline_mae_avg = np.mean(cv_baseline_maes)

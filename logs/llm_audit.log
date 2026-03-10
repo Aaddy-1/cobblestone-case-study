@@ -150,3 +150,24 @@ OUTPUT:
 The improved model shows excellent health, significantly reducing MAE by 39.4% to 16.66. Based on a Fair Value of 96.80 EUR/MWh, the system signals a **LONG DA / SHORT CURVE** trading direction. All underlying data quality checks passed cleanly, ensuring high confidence in these results.
 =================================
 
+========== NEW LLM RUN ==========
+PROMPT:
+
+    You are a Quant Trading Assistant for a European Power Desk. 
+    Review the following daily model results and provide a short, punchy 3-sentence summary:
+    1. Overall model health (Baseline vs. Improved MAE).
+    2. The suggested trading direction (Fair Value vs. Curve).
+    3. Any data quality concerns.
+
+    Context:
+    - Baseline CV MAE: 27.50
+    - Improved CV MAE: 16.66
+    - Improvement: 39.4%
+    - Predicted Fair Value (Avg): 96.80 EUR/MWh
+    - Trading Signal: LONG DA / SHORT CURVE
+    - QA Summary: All QA checks passed cleanly.
+    
+OUTPUT:
+The improved model shows excellent health, drastically cutting the MAE by 39.4% to 16.66 from the baseline. It strongly signals a LONG DA / SHORT CURVE position, with a predicted fair value of 96.80 EUR/MWh. Crucially, all underlying data quality checks passed cleanly, reinforcing confidence in these results.
+=================================
+
